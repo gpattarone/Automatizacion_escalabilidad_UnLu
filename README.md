@@ -1,39 +1,43 @@
 # Automatización y Escalabilidad Elástica de Pipelines Bioinformáticos con Nextflow y Cloud Computing
-Curso: 2025
- 
-Integrantes: 
-- Javier Alejandro Di Salvo, 
-- Gisela Pattarone, 
-- Federico Trotta.
+
+**Curso: 2025**
+
+**Integrantes:**
+
+* Javier Alejandro Di Salvo
+* Gisela Pattarone
+* Federico Trotta
+
+---
 
 # DNA Processing Pipeline
 
-Pipeline desarrollado en **Nextflow (DSL2)** para procesar secuencias de ADN a través de tres etapas secuenciales:  
-**Complementación**, **Transcripción** y **Traducción**.  
-Cada etapa se ejecuta en un entorno reproducible mediante contenedores **Docker** basados en **Biocontainers (BioPython)**.
+Pipeline desarrollado en **Nextflow (DSL2)** para procesar secuencias de ADN a través de tres etapas secuenciales:
+**Complementación**, **Transcripción** y **Traducción**.
+
+Cada etapa se ejecuta en un entorno reproducible mediante contenedores **Docker** construidos localmente con soporte para **BioPython**.
 
 ---
 
 ## Objetivo del proyecto
 
-Implementar un pipeline bioinformático modular y reproducible que permita transformar una secuencia de ADN en su:
-1. Cadena complementaria  
-2. Secuencia de ARN mensajero (transcripción)  
-3. Secuencia proteica (traducción)
+Implementar un pipeline bioinformático **modular, reproducible y portable** que permita transformar una secuencia de ADN en su:
 
-El flujo demuestra principios de **Nextflow modular**, **contenedores Docker** y **BioPython** aplicados a procesamiento básico de secuencias biológicas.
+1. **Cadena complementaria**
+2. **Secuencia de ARN mensajero (transcripción)**
+3. **Secuencia proteica (traducción)**
+
+El flujo demuestra principios de **Nextflow DSL2 modular**, **contenedores Docker** y **BioPython**, aplicados al procesamiento básico de secuencias biológicas.
 
 ---
 
 ## Descripción del flujo de trabajo
 
-### Procesos involucrados
-
-| Proceso      | Descripción | Script asociado | Módulo Nextflow | Entrada | Salida |
-|---------------|-------------|-----------------|-----------------|----------|---------|
-| `complement`  | Genera la secuencia complementaria de ADN | `scripts/complement.py` | `modules/complement.nf` | `dna.txt` | Cadena complementaria |
-| `transcribe`  | Transcribe el ADN a ARN | `scripts/transcribe.py` | `modules/transcribe.nf` | Output de `complement` | Cadena de ARN |
-| `translate`   | Traduce la secuencia de ARN en proteína | `scripts/translate.py` | `modules/translate.nf` | Output de `transcribe` | Secuencia proteica |
+| Proceso      | Descripción                               | Script asociado         | Módulo Nextflow         | Entrada                | Salida                |
+| ------------ | ----------------------------------------- | ----------------------- | ----------------------- | ---------------------- | --------------------- |
+| `complement` | Genera la secuencia complementaria de ADN | `scripts/complement.py` | `modules/complement.nf` | `input/dna.txt`        | Cadena complementaria |
+| `transcribe` | Transcribe el ADN a ARN                   | `scripts/transcribe.py` | `modules/transcribe.nf` | Output de `complement` | Cadena de ARN         |
+| `translate`  | Traduce la secuencia de ARN en proteína   | `scripts/translate.py`  | `modules/translate.nf`  | Output de `transcribe` | Secuencia proteica    |
 
 ---
 
@@ -53,28 +57,29 @@ flowchart LR
     class A file;
     class B,C,D process;
     class E output;
-````
+```
 
 ---
 
 ## Estructura del proyecto
 
 ```
-dna-pipeline/
-├── envs/
-│   └── biopython.yaml
-├── input/
-│   └── dna.txt
-├── modules/
-│   ├── complement.nf
-│   ├── transcribe.nf
-│   └── translate.nf
-├── scripts/
-│   ├── complement.py
-│   ├── transcribe.py
-│   └── translate.py
-├── main.nf
+Automatizacion_escalabilidad_UnLu/
+├── dna-pipeline/
+│   ├── input/
+│   │   └── dna.txt
+│   ├── modules/
+│   │   ├── complement.nf
+│   │   ├── transcribe.nf
+│   │   └── translate.nf
+│   ├── scripts/
+│   │   ├── complement.py
+│   │   ├── transcribe.py
+│   │   └── translate.py
+│   ├── Dockerfile
+│   └── main.nf
 ├── nextflow.config
+├── .gitignore
 └── README.md
 ```
 
@@ -82,13 +87,28 @@ dna-pipeline/
 
 ## Uso de contenedores
 
-Todos los procesos se ejecutan dentro del contenedor público de **BioPython**:
+El pipeline utiliza una **imagen Docker local personalizada** basada en `python:3.9-slim` que instala **BioPython** y dependencias del sistema.
 
-```yaml
-biocontainers/biopython:1.79--pyhdfd78af_3
+**Dockerfile utilizado:**
+
+```dockerfile
+FROM python:3.9-slim
+
+# Utilidades requeridas por Nextflow para recolectar métricas
+RUN apt-get update && apt-get install -y procps && rm -rf /var/lib/apt/lists/*
+
+# Instalación de BioPython
+RUN pip install --no-cache-dir biopython
+
+WORKDIR /data
 ```
 
-Esto asegura un entorno homogéneo y reproducible, independiente del sistema operativo.
+Construcción de la imagen local:
+
+```bash
+cd dna-pipeline
+docker build -t biopython_local:latest .
+```
 
 ---
 
@@ -98,68 +118,61 @@ Esto asegura un entorno homogéneo y reproducible, independiente del sistema ope
 
 ```bash
 git clone <URL-del-repo>
-cd dna-pipeline
+cd Automatizacion_escalabilidad_UnLu
 ```
 
-### 2. Ejecutar el pipeline con Docker
+### 2. Ejecutar con Docker
 
 ```bash
-nextflow run main.nf -profile docker -with-report -with-timeline -with-trace
+nextflow run ./dna-pipeline/main.nf -with-docker -with-report -with-timeline -with-trace
 ```
 
-### 3. Generar el diagrama del flujo (DAG)
-
-```bash
-nextflow dag main.nf | dot -Tpng > reports/dag.png
-```
+> **Nota:** chequear de que el servicio Docker esté activo (`sudo service docker start`)
+> y que la imagen `biopython_local:latest` exista localmente (`docker images`).
 
 ---
 
-## Perfiles de ejecución
+## Reportes automáticos generados
 
-| Perfil    | Descripción                                                          |
-| --------- | -------------------------------------------------------------------- |
-| `local`   | Ejecución sin contenedores (desarrollo o pruebas rápidas)            |
-| `docker`  | Ejecución reproducible usando el contenedor público de Biocontainers |
-| `cluster` | Ejecución distribuida en Kubernetes o SLURM (opcional)               |
-
----
-
-## Reproducibilidad y trazabilidad
-
-El pipeline genera automáticamente reportes de auditoría:
-
-| Reporte      | Descripción                                        | Archivo                 |
-| ------------ | -------------------------------------------------- | ----------------------- |
-| **Trace**    | Registro detallado de procesos, tiempos y recursos | `reports/trace.txt`     |
-| **Report**   | Resumen HTML de ejecución                          | `reports/report.html`   |
-| **Timeline** | Visualización temporal de tareas                   | `reports/timeline.html` |
+| Reporte      | Descripción                                     | Archivo generado    |
+| ------------ | ----------------------------------------------- | ------------------- |
+| **Trace**    | Registro detallado de procesos y recursos       | `trace-<fecha>.txt` |
+| **Report**   | Informe HTML del flujo completo                 | `report.html`       |
+| **Timeline** | Visualización temporal de las tareas ejecutadas | `timeline.html`     |
 
 ---
 
-## 📈 Escalabilidad
+## Escalabilidad
 
-El pipeline puede procesar múltiples archivos en paralelo:
+El pipeline soporta múltiples archivos de entrada en paralelo:
 
 ```bash
-input/
+dna-pipeline/input/
 ├── dna_1.txt
 ├── dna_2.txt
 └── dna_3.txt
 ```
 
-Cada archivo genera su resultado en `results/`, permitiendo evaluar el escalamiento horizontal.
+Cada secuencia genera sus resultados independientes, demostrando escalabilidad horizontal.
 
 ---
 
 ## Dependencias
 
-* **Nextflow ≥ 23.10.0**
-* **Docker ≥ 24.0**
-* **BioPython** (incluido en la imagen `biocontainers/biopython`)
-* **Graphviz** (para generar el DAG)
+* **Nextflow ≥ 24.10.0**
+* **Docker ≥ 24.0.0**
+* **Python ≥ 3.9** (dentro del contenedor)
+* **BioPython** (instalado en la imagen Docker)
 
 ---
 
-El presente repositorio corresponde al "Trabajo Final Integrador Automatización y Escalabilidad Elástica de Pipelines Bioinformáticos con Nextflow y Cloud Computing" - Javier Di Salvo, Gisela Pattarone, Federico Trotta
-```
+## Créditos
+
+Trabajo Final Integrador
+**“Automatización y Escalabilidad Elástica de Pipelines Bioinformáticos con Nextflow y Cloud Computing”**
+
+Autores:
+
+* Javier Alejandro Di Salvo
+* Gisela Pattarone
+* Federico Trotta
