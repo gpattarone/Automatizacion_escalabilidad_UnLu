@@ -4,7 +4,7 @@
 
 **Integrantes:**
 
-* Javier Alejandro Di Salvo
+* Javier Alejandro Di Salvo @JavierBioinformatic
 * Gisela Pattarone
 * Federico Trotta
 
