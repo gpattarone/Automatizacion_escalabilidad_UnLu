@@ -4,7 +4,7 @@
 
 **Integrantes:**
 
-* Javier Alejandro Di Salvo @JavierBioinformatic
+* Javier Alejandro Di Salvo [@JavierBioinformatic](https://github.com/JavierBioinformatic)
 * Gisela Pattarone
 * Federico Trotta
 
