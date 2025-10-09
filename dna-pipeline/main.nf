@@ -12,14 +12,15 @@ include { transcribe } from './modules/transcribe.nf'
 include { translate  } from './modules/translate.nf'
 
 workflow {
+
     // Canal inicial a partir del archivo de entrada
     Channel.fromPath(params.input).set { dna_ch }
 
-    // Encadenamiento
-    complement(dna_ch)
-    transcribe(comp_out)
-    translate(rna_out)
+    // Encadenamiento de procesos con variables explícitas
+    comp_out = complement(dna_ch)
+    rna_out  = transcribe(comp_out)
+    prot_out = translate(rna_out)
 
-    // (Opcional) ver salida por consola
-    // prot_out.view { "Protein: $it" }
+    // Mostrar salida final (opcional)
+    prot_out.view { "Protein: $it" }
 }
