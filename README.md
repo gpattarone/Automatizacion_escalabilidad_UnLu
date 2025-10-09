@@ -8,9 +8,9 @@ Integrantes:
 
 # DNA Processing Pipeline
 
-Pipeline desarrollado en **Nextflow** para procesar secuencias de ADN a través de tres etapas secuenciales:  
+Pipeline desarrollado en **Nextflow (DSL2)** para procesar secuencias de ADN a través de tres etapas secuenciales:  
 **Complementación**, **Transcripción** y **Traducción**.  
-Cada etapa se ejecuta en un entorno reproducible mediante contenedores Docker basados en **Biocontainers (BioPython)**.
+Cada etapa se ejecuta en un entorno reproducible mediante contenedores **Docker** basados en **Biocontainers (BioPython)**.
 
 ---
 
@@ -21,19 +21,19 @@ Implementar un pipeline bioinformático modular y reproducible que permita trans
 2. Secuencia de ARN mensajero (transcripción)  
 3. Secuencia proteica (traducción)
 
-Este flujo ilustra los principios básicos de procesamiento de secuencias biológicas utilizando **Nextflow**, **Docker** y **BioPython**.
+El flujo demuestra principios de **Nextflow modular**, **contenedores Docker** y **BioPython** aplicados a procesamiento básico de secuencias biológicas.
 
 ---
 
-## ⚙️ Descripción del flujo de trabajo
+## Descripción del flujo de trabajo
 
 ### Procesos involucrados
 
-| Proceso      | Descripción | Script asociado | Entrada | Salida |
-|---------------|-------------|-----------------|----------|---------|
-| `complement`  | Genera la secuencia complementaria de ADN | `scripts/complement.py` | `dna.txt` | Cadena complementaria |
-| `transcribe`  | Transcribe el ADN a ARN | `scripts/transcribe.py` | Output de `complement` | Cadena de ARN |
-| `translate`   | Traduce la secuencia de ARN en proteína | `scripts/translate.py` | Output de `transcribe` | Secuencia proteica |
+| Proceso      | Descripción | Script asociado | Módulo Nextflow | Entrada | Salida |
+|---------------|-------------|-----------------|-----------------|----------|---------|
+| `complement`  | Genera la secuencia complementaria de ADN | `scripts/complement.py` | `modules/complement.nf` | `dna.txt` | Cadena complementaria |
+| `transcribe`  | Transcribe el ADN a ARN | `scripts/transcribe.py` | `modules/transcribe.nf` | Output de `complement` | Cadena de ARN |
+| `translate`   | Traduce la secuencia de ARN en proteína | `scripts/translate.py` | `modules/translate.nf` | Output de `transcribe` | Secuencia proteica |
 
 ---
 
@@ -41,11 +41,42 @@ Este flujo ilustra los principios básicos de procesamiento de secuencias bioló
 
 ```mermaid
 flowchart LR
-    A[input/dna.txt] --> B[Complement]
+    A[input/dna.txt]:::file --> B[Complement]
     B --> C[Transcribe]
     C --> D[Translate]
-    D --> E[Output: Protein Sequence]
+    D --> E[[Output: Protein Sequence]]
+
+    classDef file fill:#e8f4fa,stroke:#333,stroke-width:1px,color:#000;
+    classDef process fill:#cde7f0,stroke:#333,stroke-width:1px,color:#000;
+    classDef output fill:#d5ead5,stroke:#333,stroke-width:1px,color:#000,font-weight:bold;
+
+    class A file;
+    class B,C,D process;
+    class E output;
 ````
+
+---
+
+## Estructura del proyecto
+
+```
+dna-pipeline/
+├── envs/
+│   └── biopython.yaml
+├── input/
+│   └── dna.txt
+├── modules/
+│   ├── complement.nf
+│   ├── transcribe.nf
+│   └── translate.nf
+├── scripts/
+│   ├── complement.py
+│   ├── transcribe.py
+│   └── translate.py
+├── main.nf
+├── nextflow.config
+└── README.md
+```
 
 ---
 
@@ -57,7 +88,7 @@ Todos los procesos se ejecutan dentro del contenedor público de **BioPython**:
 biocontainers/biopython:1.79--pyhdfd78af_3
 ```
 
-Esto asegura un entorno homogéneo y reproducible, independientemente del sistema operativo del usuario.
+Esto asegura un entorno homogéneo y reproducible, independiente del sistema operativo.
 
 ---
 
@@ -70,29 +101,13 @@ git clone <URL-del-repo>
 cd dna-pipeline
 ```
 
-### 2. Estructura esperada del proyecto
-
-```
-.
-├── main.nf
-├── nextflow.config
-├── scripts/
-│   ├── complement.py
-│   ├── transcribe.py
-│   └── translate.py
-├── input/
-│   └── dna.txt
-├── results/
-└── reports/
-```
-
-### 3. Ejecutar el pipeline con Docker
+### 2. Ejecutar el pipeline con Docker
 
 ```bash
 nextflow run main.nf -profile docker -with-report -with-timeline -with-trace
 ```
 
-### 4. Generar el DAG del flujo
+### 3. Generar el diagrama del flujo (DAG)
 
 ```bash
 nextflow dag main.nf | dot -Tpng > reports/dag.png
@@ -100,27 +115,31 @@ nextflow dag main.nf | dot -Tpng > reports/dag.png
 
 ---
 
+## Perfiles de ejecución
+
+| Perfil    | Descripción                                                          |
+| --------- | -------------------------------------------------------------------- |
+| `local`   | Ejecución sin contenedores (desarrollo o pruebas rápidas)            |
+| `docker`  | Ejecución reproducible usando el contenedor público de Biocontainers |
+| `cluster` | Ejecución distribuida en Kubernetes o SLURM (opcional)               |
+
+---
+
 ## Reproducibilidad y trazabilidad
 
-El pipeline implementa herramientas de auditoría integradas de Nextflow:
+El pipeline genera automáticamente reportes de auditoría:
 
 | Reporte      | Descripción                                        | Archivo                 |
 | ------------ | -------------------------------------------------- | ----------------------- |
 | **Trace**    | Registro detallado de procesos, tiempos y recursos | `reports/trace.txt`     |
 | **Report**   | Resumen HTML de ejecución                          | `reports/report.html`   |
-| **Timeline** | Visualización temporal de cada tarea               | `reports/timeline.html` |
+| **Timeline** | Visualización temporal de tareas                   | `reports/timeline.html` |
 
 ---
 
-## Ejecución distribuida (opcional)
+## 📈 Escalabilidad
 
-Se incluye un perfil `cluster` en `nextflow.config` para ejecución en **entornos Kubernetes o SLURM**, facilitando escalabilidad horizontal.
-
----
-
-## Métricas de performance
-
-El pipeline puede escalar horizontalmente al procesar múltiples archivos de entrada:
+El pipeline puede procesar múltiples archivos en paralelo:
 
 ```bash
 input/
@@ -129,7 +148,7 @@ input/
 └── dna_3.txt
 ```
 
-Cada archivo genera resultados independientes en `results/`, optimizando el uso de CPU y memoria.
+Cada archivo genera su resultado en `results/`, permitiendo evaluar el escalamiento horizontal.
 
 ---
 
@@ -137,8 +156,8 @@ Cada archivo genera resultados independientes en `results/`, optimizando el uso 
 
 * **Nextflow ≥ 23.10.0**
 * **Docker ≥ 24.0**
-* **BioPython** (desde imagen biocontainers)
-* **Graphviz** (para generar DAG)
+* **BioPython** (incluido en la imagen `biocontainers/biopython`)
+* **Graphviz** (para generar el DAG)
 
 ---
 
