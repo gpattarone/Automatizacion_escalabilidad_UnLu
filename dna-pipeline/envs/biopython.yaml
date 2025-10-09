@@ -1,0 +1,10 @@
+# envs/biopython.yaml
+# Conda environment for DNA processing pipeline
+
+name: biopython_env
+channels:
+  - bioconda
+  - conda-forge
+dependencies:
+  - python=3.10
+  - biopython
