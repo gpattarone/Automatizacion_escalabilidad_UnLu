@@ -154,6 +154,8 @@ dna-pipeline/input/
 ```
 
 Cada secuencia genera sus resultados independientes, demostrando escalabilidad horizontal.
+En caso de querer utilizar una secuencia diferente, se debe acceder al archivo ubicado en dna-pipeline/input/dna.txt y reemplazar la secuencia existente por la nueva que se desee analizar. 
+Luego, guardar los cambios antes de ejecutar nuevamente el pipeline.
 
 ---
 
