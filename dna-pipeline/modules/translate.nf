@@ -11,6 +11,8 @@ process translate {
 
     output:
         stdout into prot_out
+        publishDir 'results/complement', mode: 'copy'
+
 
     script:
         """
