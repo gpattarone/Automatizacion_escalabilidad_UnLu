@@ -11,6 +11,8 @@ process complement {
 
     output:
         stdout into comp_out
+        publishDir 'results/complement', mode: 'copy'
+
 
     script:
         """
