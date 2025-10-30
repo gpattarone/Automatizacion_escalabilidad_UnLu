@@ -1,19 +1,20 @@
-// transcribe.nf
-//
-// Process: transcribe
-// Description: Transcribes DNA to RNA using a Python script.
-//
-
+// modules/transcribe.nf
 process transcribe {
+  tag { sample_id }
+  publishDir "results/${sample_id}", mode: 'copy', pattern: "*.rna.txt"
 
-    input:
-        path dna_file
+  input:
+  tuple val(sample_id), path(comp_file)
+  path tr_py from "${projectDir}/scripts/transcribe.py"
 
-    output:
-        stdout into rna_out
+  output:
+  tuple val(sample_id), path("${sample_id}.rna.txt")
+  publishDir 'results/complement', mode: 'copy'
 
-    script:
-        """
-        python3 scripts/transcribe.py \$(cat ${dna_file})
-        """
+
+  script:
+  """
+  set -euo pipefail
+  python3 ${tr_py} ${comp_file} ${sample_id}.rna.txt
+  """
 }
